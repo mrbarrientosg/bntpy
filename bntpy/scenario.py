@@ -83,8 +83,10 @@ class Scenario:
                     name) + str(self.parameters.get_value(name, data[1][name])))
 
             process = subprocess.run(
-                command, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+                command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
+            print(process.stderr)
+            print(process.stdout)
             fitness += float(process.stdout)
 
         return (data[0], fitness / len(data[2]))
