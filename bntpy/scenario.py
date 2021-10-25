@@ -75,11 +75,13 @@ class Scenario:
         fitness = 0.0
         for (_id, seed, instance) in data[2]:
             id_individual = data[1]["ID"]
+
+            data[3].acquire()
             command = [self.target_runner, str(id_individual), str(_id), str(seed), instance]
 
             for name in self.parameters.get_names():
                 command.append(self.parameters.get_switch(name) + str(self.parameters.get_value(name, data[1][name])))
-
+            data[3].release()
             process = subprocess.run(command, capture_output=True)
             
             print(process.stderr)
@@ -96,7 +98,8 @@ class Scenario:
         """Aqui se deberian correr todo los individuos"""
         count = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=count)
-        data = [(idx, row, intances) for idx, row in self.population.iterrows()]
+        lock = multiprocessing.Lock()
+        data = [(idx, row, intances, lock) for idx, row in self.population.iterrows()]
         result = pool.map(self.run_individual, data)
         self.callback_individual(result)
 
