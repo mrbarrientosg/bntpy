@@ -1,6 +1,4 @@
 import os
-from re import I, S
-import re
 from typing import List, Optional
 from math import ceil
 import numpy as np
@@ -152,7 +150,7 @@ class Scenario:
         self.all_configurations = self.population
         self.reduce_population()
 
-        for i in range(1):
+        for i in range(self.max_iterations):
             print(f"Iteration {i + 1} of {self.max_iterations}")
 
             # Crear red
