@@ -45,8 +45,7 @@ class Scenario:
         for key in params:
             setattr(self, key, params[key])
 
-        self.train_instances = [join(self.train_instance_dir, f) for f in listdir(
-            self.train_instance_dir) if isfile(join(self.train_instance_dir, f))]
+        self.train_instances = [join(self.train_instance_dir, f) for f in listdir(self.train_instance_dir) if isfile(join(self.train_instance_dir, f))]
 
     def initialize_population(self):
         for _ in range(self.population_size):

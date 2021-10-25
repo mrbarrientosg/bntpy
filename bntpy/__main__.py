@@ -18,4 +18,4 @@ args = parser.parse_args()
 
 parameters = Parameters(file_path=args.parameters)
 scenario = Scenario(parameters, args.scenario)
-# scenario.run()
+scenario.run()
