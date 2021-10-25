@@ -51,7 +51,7 @@ class Scenario:
         for _ in range(self.population_size):
             row = {
                 "ID": self.last_individual,
-                "FITNESS": np.random.randint(0, 10000)
+                "FITNESS": -1.0
             }
 
             for name in self.parameters.get_names():
