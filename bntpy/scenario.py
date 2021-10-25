@@ -75,16 +75,13 @@ class Scenario:
         fitness = 0.0
         for (_id, seed, instance) in data[2]:
             id_individual = data[1]["ID"]
-            command = [self.target_runner, str(
-                id_individual), str(_id), str(seed), instance]
+            command = [self.target_runner, str(id_individual), str(_id), str(seed), instance]
 
             for name in self.parameters.get_names():
-                command.append(self.parameters.get_switch(
-                    name) + str(self.parameters.get_value(name, data[1][name])))
+                command.append(self.parameters.get_switch(name) + str(self.parameters.get_value(name, data[1][name])))
 
-            process = subprocess.run(
-                command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-
+            process = subprocess.run(command, capture_output=True)
+            
             print(process.stderr)
             print(process.stdout)
             fitness += float(process.stdout)
@@ -99,16 +96,13 @@ class Scenario:
         """Aqui se deberian correr todo los individuos"""
         count = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=count)
-        data = [(idx, row, intances)
-                for idx, row in self.population.iterrows()]
-        masync = pool.map_async(self.run_individual,
-                                data, callback=self.callback_individual)
+        data = [(idx, row, intances) for idx, row in self.population.iterrows()]
+        masync = pool.map_async(self.run_individual, data, callback=self.callback_individual)
         masync.wait()
 
     def create_instances(self):
         seed = np.random.randint(np.iinfo(np.uint32).max, dtype=np.uint32)
-        instances = (self.last_individual, seed,
-                     self.train_instances[self.last_individual % len(self.train_instances)])
+        instances = (self.last_individual, seed, self.train_instances[self.last_individual % len(self.train_instances)])
         self.last_individual += 1
         return list([instances])
 
