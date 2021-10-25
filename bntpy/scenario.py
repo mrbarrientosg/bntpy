@@ -92,8 +92,6 @@ class Scenario:
                 )
             process = subprocess.run(command, capture_output=True)
 
-            print(process.stderr)
-            print(process.stdout)
             fitness += float(process.stdout)
 
         return (data["idx"], fitness / len(data["instance"]))
