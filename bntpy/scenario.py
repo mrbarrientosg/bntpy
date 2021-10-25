@@ -79,7 +79,7 @@ class Scenario:
 
             command = [
                 data["target_runner"],
-                str(id_individual),
+                str(int(id_individual)),
                 str(_id),
                 str(seed),
                 instance,
