@@ -97,8 +97,8 @@ class Scenario:
         count = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=count)
         data = [(idx, row, intances) for idx, row in self.population.iterrows()]
-        masync = pool.map_async(self.run_individual, data, callback=self.callback_individual)
-        masync.wait()
+        result = pool.map(self.run_individual, data)
+        self.callback_individual(result)
 
     def create_instances(self):
         seed = np.random.randint(np.iinfo(np.uint32).max, dtype=np.uint32)
