@@ -16,23 +16,27 @@ class Parameters:
             columns=["name", "switch", "type", "domain"])
 
         for key in params:
-            self.parameters = self.parameters.append(
-                params[key], ignore_index=True)
+            self.parameters = self.parameters.append(params[key],
+                                                     ignore_index=True)
 
         self.nb_params = self.parameters.shape[0]
 
     def get_switch(self, name: str):
-        return self.parameters.loc[self.parameters["name"] == name].iloc[0]["switch"]
+        return self.parameters.loc[self.parameters["name"] ==
+                                   name].iloc[0]["switch"]
 
     def get_type(self, name: str):
-        return self.parameters.loc[self.parameters["name"] == name].iloc[0]["type"]
+        return self.parameters.loc[self.parameters["name"] ==
+                                   name].iloc[0]["type"]
 
     def get_domain(self, name: str):
-        return self.parameters.loc[self.parameters["name"] == name].iloc[0]["domain"]
-    
+        return self.parameters.loc[self.parameters["name"] ==
+                                   name].iloc[0]["domain"]
+
     def get_value(self, name: str, idx):
         if self.get_type(name) == "c":
-            return self.parameters.loc[self.parameters["name"] == name].iloc[0]["domain"][idx]
+            return self.parameters.loc[self.parameters["name"] ==
+                                       name].iloc[0]["domain"][idx]
         return idx
 
     def get_names(self):
