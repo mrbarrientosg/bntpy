@@ -17,31 +17,6 @@ from os import listdir
 from os.path import isfile, join
 
 
-def run_individual(data):
-    fitness = 0.0
-    for (_id, seed, instance) in data["instance"]:
-        id_individual = data["row"]["ID"]
-
-        command = [
-            data["target_runner"],
-            str(id_individual),
-            str(_id),
-            str(seed), instance
-        ]
-
-        for name in data["parameters"].get_names():
-            command.append(
-                data["parameters"].get_switch(name) +
-                str(data["parameters"].get_value(name, data["row"][name])))
-        process = subprocess.run(command, capture_output=True)
-
-        print(process.stderr)
-        print(process.stdout)
-        fitness += float(process.stdout)
-
-    return (data[0], fitness / len(data[2]))
-
-
 class Scenario:
     def __init__(self, parameters: Parameters, file=None):
         self.target_runner: str = ""
@@ -57,11 +32,12 @@ class Scenario:
         self.last_individual: int = 0
         self.last_instance: int = 0
         self.population = pd.DataFrame(
-            columns=["ID", *parameters.get_names(), "FITNESS"])
+            columns=["ID", *parameters.get_names(), "FITNESS"]
+        )
         self.all_configurations = pd.DataFrame(
-            columns=["ID", *parameters.get_names(), "FITNESS"])
-        self.elitists = pd.DataFrame(
-            columns=["ID", *parameters.get_names(), "FITNESS"])
+            columns=["ID", *parameters.get_names(), "FITNESS"]
+        )
+        self.elitists = pd.DataFrame(columns=["ID", *parameters.get_names(), "FITNESS"])
         self.model = None
         self.read_scenario(file)
 
@@ -84,9 +60,7 @@ class Scenario:
             for name in self.parameters.get_names():
                 domain = self.parameters.get_domain(name)
                 if self.parameters.get_type(name) == "i":
-                    row[name] = np.random.randint(domain[0],
-                                                  domain[1] + 1,
-                                                  dtype=int)
+                    row[name] = np.random.randint(domain[0], domain[1] + 1, dtype=int)
                 else:
                     row[name] = np.random.randint(0, len(domain), dtype=int)
 
@@ -98,6 +72,32 @@ class Scenario:
         self.population = self.population.head(self.select_size)
         self.population = self.population.reset_index(drop=True)
 
+    def run_individual(self, data):
+        fitness = 0.0
+        for (_id, seed, instance) in data["instance"]:
+            id_individual = data["row"]["ID"]
+
+            command = [
+                data["target_runner"],
+                str(id_individual),
+                str(_id),
+                str(seed),
+                instance,
+            ]
+
+            for name in data["parameters"].get_names():
+                command.append(
+                    data["parameters"].get_switch(name)
+                    + str(data["parameters"].get_value(name, int(data["row"][name])))
+                )
+            process = subprocess.run(command, capture_output=True)
+
+            print(process.stderr)
+            print(process.stdout)
+            fitness += float(process.stdout)
+
+        return (data["idx"], fitness / len(data["instance"]))
+
     def callback_individual(self, result):
         for idx, fitness in result:
             self.population.iloc[idx]["FITNESS"] = fitness
@@ -106,23 +106,28 @@ class Scenario:
         """Aqui se deberian correr todo los individuos"""
         count = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=count)
-        data = [{
-            "idx": idx,
-            "row": row,
-            "instance": instances,
-            "target_runner": self.target_runner,
-            "parameters": copy.deepcopy(self.parameters)
-        } for idx, row in self.population.iterrows()]
-        result = pool.map(run_individual, data)
+        data = [
+            {
+                "idx": idx,
+                "row": row,
+                "instance": instances,
+                "target_runner": self.target_runner,
+                "parameters": self.parameters,
+            }
+            for idx, row in self.population.iterrows()
+        ]
+        result = pool.map(self.run_individual, data)
         pool.close()
         pool.join()
         self.callback_individual(result)
 
     def create_instances(self):
         seed = np.random.randint(np.iinfo(np.uint32).max, dtype=np.uint32)
-        instances = (self.last_individual, seed,
-                     self.train_instances[self.last_individual %
-                                          len(self.train_instances)])
+        instances = (
+            self.last_individual,
+            seed,
+            self.train_instances[self.last_individual % len(self.train_instances)],
+        )
         self.last_individual += 1
         return list([instances])
 
@@ -130,10 +135,12 @@ class Scenario:
         self.all_configurations.sort_values("ID", inplace=True)
         _all_configurations = self.all_configurations.apply(
             lambda row, names: pd.Series(
-                [self.parameters.get_value(name, row[name]) for name in names],
-                index=names),
+                [self.parameters.get_value(name, int(row[name])) for name in names],
+                index=names,
+            ),
             axis=1,
-            names=self.parameters.get_names())
+            names=self.parameters.get_names(),
+        )
         _all_configurations.insert(0, "ID", self.all_configurations["ID"])
         _all_configurations["FITNESS"] = self.all_configurations["FITNESS"]
         _all_configurations.to_csv("all_configurations.csv", index=False)
@@ -143,10 +150,12 @@ class Scenario:
         self.elitists.drop_duplicates(subset=["ID"], inplace=True)
         elitists_configurations = self.elitists.apply(
             lambda row, names: pd.Series(
-                [self.parameters.get_value(name, row[name]) for name in names],
-                index=names),
+                [self.parameters.get_value(name, int(row[name])) for name in names],
+                index=names,
+            ),
             axis=1,
-            names=self.parameters.get_names())
+            names=self.parameters.get_names(),
+        )
         elitists_configurations.insert(0, "ID", self.elitists["ID"])
         elitists_configurations["FITNESS"] = self.elitists["FITNESS"]
         elitists_configurations.to_csv("elitists.csv", index=False)
@@ -180,46 +189,58 @@ class Scenario:
             est = HillClimbSearch(self.population[self.parameters.get_names()])
 
             self.model = BayesianNetwork(
-                est.estimate(K2Score(
-                    self.population[self.parameters.get_names()]),
-                             max_indegree=2))
+                est.estimate(
+                    K2Score(self.population[self.parameters.get_names()]),
+                    max_indegree=2,
+                )
+            )
             self.model.fit(self.population[self.parameters.get_names()])
             self.model.check_model()
 
             inference = BayesianModelSampling(self.model)
-            sample = inference.likelihood_weighted_sample(
-                size=self.sample_size)
+            sample = inference.likelihood_weighted_sample(size=self.sample_size)
             sample = sample.drop(columns=["_weight"])
-            sample["ID"] = np.arange(self.last_individual,
-                                     self.last_individual + self.sample_size)
+            sample["ID"] = np.arange(
+                self.last_individual, self.last_individual + self.sample_size
+            )
             sample["FITNESS"] = np.full(self.sample_size, -1.0)
 
-            self.population = pd.concat([self.population,
-                                         sample]).reset_index(drop=True)
+            self.population = pd.concat([self.population, sample]).reset_index(
+                drop=True
+            )
             instances = self.create_instances()
             self.run_population(instances)
-            self.all_configurations = pd.concat([
-                self.all_configurations,
-                self.population[self.population["ID"].isin(
-                    sample["ID"].to_numpy())]
-            ]).reset_index(drop=True)
+            self.all_configurations = pd.concat(
+                [
+                    self.all_configurations,
+                    self.population[
+                        self.population["ID"].isin(sample["ID"].to_numpy())
+                    ],
+                ]
+            ).reset_index(drop=True)
             self.reduce_population()
             print(
                 f"Best-so-far configurations: {self.population.head(3)['ID'].to_numpy()} \t fitness: {self.population.head(3)['FITNESS'].to_numpy()}"
             )
             print("Description of the best-so-far configuration:")
             print(
-                self.population.head(3).apply(
-                    lambda row, names: pd.Series([
-                        self.parameters.get_value(name, row[name])
-                        for name in names
-                    ],
-                                                 index=names),
+                self.population.head(3)
+                .apply(
+                    lambda row, names: pd.Series(
+                        [
+                            self.parameters.get_value(name, int(row[name]))
+                            for name in names
+                        ],
+                        index=names,
+                    ),
                     axis=1,
-                    names=self.parameters.get_names()).to_string())
-            self.elitists = pd.concat([self.elitists,
-                                       self.population.head(3)
-                                       ]).reset_index(drop=True)
+                    names=self.parameters.get_names(),
+                )
+                .to_string()
+            )
+            self.elitists = pd.concat(
+                [self.elitists, self.population.head(3)]
+            ).reset_index(drop=True)
             print()
             print("Bayesian network representation:")
             print(to_pydot(self.model).to_string())
