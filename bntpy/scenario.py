@@ -180,6 +180,8 @@ class Scenario:
         self.all_configurations = self.population
         self.reduce_population()
 
+        max_repetition = 0
+
         for i in range(self.max_iterations):
             print(f"Iteration {i + 1} of {self.max_iterations}")
 
@@ -189,6 +191,14 @@ class Scenario:
             self.model = BayesianNetwork(est.estimate())
             self.model.fit(self.population[self.parameters.get_names()])
             self.model.check_model()
+
+            if len(self.model.edges()) == 0:
+                max_repetition += 1
+            else:
+                max_repetition = 0
+            
+            if max_repetition == 5:
+                break
 
             inference = BayesianModelSampling(self.model)
             sample = inference.likelihood_weighted_sample(size=self.sample_size)
