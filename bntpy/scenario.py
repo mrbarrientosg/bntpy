@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, MmhcEstimator
+from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -188,21 +188,24 @@ class Scenario:
             # Crear red
             est = HillClimbSearch(self.population[self.parameters.get_names()])
 
-            self.model = BayesianNetwork(est.estimate(epsilon=1e-6, max_iter=1e7))
-            self.model.fit(self.population[self.parameters.get_names()])
+            self.model = BayesianNetwork(est.estimate())
+            self.model.fit(
+                self.population[self.parameters.get_names()],
+                estimator=ExpectationMaximization,
+            )
             self.model.check_model()
 
             if len(self.model.edges()) == 0:
                 max_repetition += 1
             else:
                 max_repetition = 0
-            
+
             if max_repetition == 5:
                 break
 
             inference = BayesianModelSampling(self.model)
-            sample = inference.likelihood_weighted_sample(size=self.sample_size)
-            sample = sample.drop(columns=["_weight"])
+            sample = inference.forward_sample(size=self.sample_size)
+            #sample = sample.drop(columns=["_weight"])
             sample["ID"] = np.arange(
                 self.last_individual, self.last_individual + self.sample_size
             )
