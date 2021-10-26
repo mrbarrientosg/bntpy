@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization
+from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization, PC
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -186,9 +186,9 @@ class Scenario:
             print(f"Iteration {i + 1} of {self.max_iterations}")
 
             # Crear red
-            est = HillClimbSearch(self.population[self.parameters.get_names()])
+            est = PC(self.population[self.parameters.get_names()])
 
-            self.model = BayesianNetwork(est.estimate())
+            self.model = BayesianNetwork(est.estimate("parallel"))
             self.model.fit(
                 self.population[self.parameters.get_names()],
                 estimator=ExpectationMaximization,
