@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization, PC
+from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization, TreeSearch
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -73,7 +73,7 @@ class Scenario:
         self.population = self.population.reset_index(drop=True)
 
     def run_individual(self, data):
-        fitness = 0.0
+        fitness = 1.0
         for (_id, seed, instance) in data["instance"]:
             id_individual = data["row"]["ID"]
 
@@ -90,9 +90,9 @@ class Scenario:
                     data["parameters"].get_switch(name)
                     + str(data["parameters"].get_value(name, int(data["row"][name])))
                 )
-            process = subprocess.run(command, capture_output=True)
+            # process = subprocess.run(command, capture_output=True)
 
-            fitness += float(process.stdout)
+            # fitness += float(process.stdout)
 
         return (data["idx"], fitness / len(data["instance"]))
 
@@ -159,9 +159,9 @@ class Scenario:
         elitists_configurations.to_csv("elitists.csv", index=False)
 
     def run(self):
-        if not os.access(self.target_runner, os.X_OK):
-            print("Target runner is not an executable file")
-            return
+        # if not os.access(self.target_runner, os.X_OK):
+        #     print("Target runner is not an executable file")
+        #     return
 
         print("# Bayesian Network Tuning Parameter ----------")
         print("# Version: 1.0.0")
@@ -186,9 +186,9 @@ class Scenario:
             print(f"Iteration {i + 1} of {self.max_iterations}")
 
             # Crear red
-            est = PC(self.population[self.parameters.get_names()])
+            est = TreeSearch(self.population[self.parameters.get_names()])
 
-            self.model = BayesianNetwork(est.estimate("parallel"))
+            self.model = BayesianNetwork(est.estimate())
             self.model.fit(
                 self.population[self.parameters.get_names()],
                 estimator=ExpectationMaximization,
@@ -202,7 +202,7 @@ class Scenario:
 
             if max_repetition == 5:
                 break
-
+            
             inference = BayesianModelSampling(self.model)
             sample = inference.forward_sample(size=self.sample_size)
             #sample = sample.drop(columns=["_weight"])
