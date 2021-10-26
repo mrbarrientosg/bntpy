@@ -73,7 +73,7 @@ class Scenario:
         self.population = self.population.reset_index(drop=True)
 
     def run_individual(self, data):
-        fitness = 1.0
+        fitness = 0.0
         for (_id, seed, instance) in data["instance"]:
             id_individual = data["row"]["ID"]
 
@@ -90,9 +90,9 @@ class Scenario:
                     data["parameters"].get_switch(name)
                     + str(data["parameters"].get_value(name, int(data["row"][name])))
                 )
-            # process = subprocess.run(command, capture_output=True)
+            process = subprocess.run(command, capture_output=True)
 
-            # fitness += float(process.stdout)
+            fitness += float(process.stdout)
 
         return (data["idx"], fitness / len(data["instance"]))
 
@@ -159,9 +159,9 @@ class Scenario:
         elitists_configurations.to_csv("elitists.csv", index=False)
 
     def run(self):
-        # if not os.access(self.target_runner, os.X_OK):
-        #     print("Target runner is not an executable file")
-        #     return
+        if not os.access(self.target_runner, os.X_OK):
+            print("Target runner is not an executable file")
+            return
 
         print("# Bayesian Network Tuning Parameter ----------")
         print("# Version: 1.0.0")
