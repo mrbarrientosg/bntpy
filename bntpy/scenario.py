@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, MmhcEstimator, ExpectationMaximization, TreeSearch
+from pgmpy.estimators import HillClimbSearch, MaximumLikelihoodEstimator
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -186,12 +186,13 @@ class Scenario:
             print(f"Iteration {i + 1} of {self.max_iterations}")
 
             # Crear red
-            est = TreeSearch(self.population[self.parameters.get_names()])
+            data = self.population[self.parameters.get_names()]
+            est = HillClimbSearch(data)
 
-            self.model = BayesianNetwork(est.estimate())
+            self.model = BayesianNetwork(est.estimate(epsilon=float("-inf"), max_indegree=3))
             self.model.fit(
                 self.population[self.parameters.get_names()],
-                estimator=ExpectationMaximization,
+                estimator=MaximumLikelihoodEstimator,
             )
             self.model.check_model()
 
@@ -202,10 +203,10 @@ class Scenario:
 
             if max_repetition == 5:
                 break
-            
+
             inference = BayesianModelSampling(self.model)
-            sample = inference.forward_sample(size=self.sample_size)
-            #sample = sample.drop(columns=["_weight"])
+            sample = inference.likelihood_weighted_sample(size=self.sample_size)
+            sample = sample.drop(columns=["_weight"])
             sample["ID"] = np.arange(
                 self.last_individual, self.last_individual + self.sample_size
             )
