@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, ExhaustiveSearch
+from pgmpy.estimators import HillClimbSearch, MmhcEstimator
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -186,12 +186,7 @@ class Scenario:
             # Crear red
             est = HillClimbSearch(self.population[self.parameters.get_names()])
 
-            self.model = BayesianNetwork(
-                est.estimate(
-                    K2Score(self.population[self.parameters.get_names()]),
-                    max_indegree=2,
-                )
-            )
+            self.model = BayesianNetwork(est.estimate())
             self.model.fit(self.population[self.parameters.get_names()])
             self.model.check_model()
 
