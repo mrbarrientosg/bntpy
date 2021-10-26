@@ -188,7 +188,7 @@ class Scenario:
             # Crear red
             est = HillClimbSearch(self.population[self.parameters.get_names()])
 
-            self.model = BayesianNetwork(est.estimate())
+            self.model = BayesianNetwork(est.estimate(epsilon=1e-6, max_iter=1e7))
             self.model.fit(self.population[self.parameters.get_names()])
             self.model.check_model()
 
