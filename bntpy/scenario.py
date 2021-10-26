@@ -202,6 +202,7 @@ class Scenario:
                 self.last_individual, self.last_individual + self.sample_size
             )
             sample["FITNESS"] = np.full(self.sample_size, -1.0)
+            self.last_individual += self.sample_size
 
             self.population = pd.concat([self.population, sample]).reset_index(
                 drop=True
