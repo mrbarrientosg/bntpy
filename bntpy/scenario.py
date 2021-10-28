@@ -3,7 +3,7 @@ from typing import List, Optional
 from math import ceil
 import numpy as np
 import pandas as pd
-from pgmpy.estimators import HillClimbSearch, MaximumLikelihoodEstimator
+from pgmpy.estimators import HillClimbSearch, MaximumLikelihoodEstimator, BayesianEstimator
 from pgmpy.estimators.StructureScore import K2Score
 from pgmpy.models.BayesianNetwork import BayesianNetwork
 import toml
@@ -192,7 +192,8 @@ class Scenario:
             self.model = BayesianNetwork(est.estimate(epsilon=float("-inf"), max_indegree=3))
             self.model.fit(
                 self.population[self.parameters.get_names()],
-                estimator=MaximumLikelihoodEstimator,
+                estimator=BayesianEstimator,
+                equivalent_sample_size=self.sample_size
             )
             self.model.check_model()
 
