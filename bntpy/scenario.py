@@ -189,7 +189,7 @@ class Scenario:
             data = self.population[self.parameters.get_names()]
             est = HillClimbSearch(data)
 
-            self.model = BayesianNetwork(est.estimate(epsilon=float("-inf"), max_indegree=2))
+            self.model = BayesianNetwork(est.estimate(epsilon=1e-6))
             self.model.fit(
                 self.population[self.parameters.get_names()],
                 estimator=BayesianEstimator,
